@@ -1,0 +1,17 @@
+/node_modules
+.DS_Store
+.idea
+.phpstorm.meta.php
+.env
+.env.*
+.env-*
+*.log
+
+docker/
+
+dist
+docker-compose.override.yml
+api.log
+
+storage
+.vscode/
