@@ -331,10 +331,13 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      await ctx.editMessageText(
-        ctx.callbackQuery.message?.date + '\n\n✅ <b>APPROVED</b>',
-        { parse_mode: 'HTML' },
-      )
+      const originalText =
+        'text' in (ctx.callbackQuery.message || {})
+          ? ctx.callbackQuery.message.text
+          : 'Application'
+      await ctx.editMessageText(originalText + '\n\n✅ <b>APPROVED</b>', {
+        parse_mode: 'HTML',
+      })
 
       // Clear user session
       clearUserSession(userId, sessions)
@@ -351,10 +354,13 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      await ctx.editMessageText(
-        ctx.callbackQuery.message?.date + '\n\n❌ <b>REJECTED</b>',
-        { parse_mode: 'HTML' },
-      )
+      const originalText =
+        'text' in (ctx.callbackQuery.message || {})
+          ? ctx.callbackQuery.message.text
+          : 'Application'
+      await ctx.editMessageText(originalText + '\n\n❌ <b>REJECTED</b>', {
+        parse_mode: 'HTML',
+      })
 
       // Clear user session
       clearUserSession(userId, sessions)
@@ -472,17 +478,18 @@ bot.catch((err: unknown, ctx: Context) => {
   ctx.reply('An error occurred. Please try again later.')
 })
 
-console.log(1234)
 // Launch bot
 bot
   .launch()
   .then(() => {
-    console.log('Bot started successfully!')
+    // This won't execute until bot stops
   })
   .catch(err => {
-    console.error('Failed to start bot:', err)
+    console.error('❌ Failed to start bot:', err)
     process.exit(1)
   })
+
+console.log('✅ Bot is running and listening for messages...')
 
 // Enable graceful shutdown
 process.once('SIGINT', () => {
