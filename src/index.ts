@@ -331,10 +331,7 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText =
-        'text' in (ctx.callbackQuery.message || {})
-          ? ctx.callbackQuery.message.text
-          : 'Application'
+      const originalText = 'Application'
       await ctx.editMessageText(originalText + '\n\n✅ <b>APPROVED</b>', {
         parse_mode: 'HTML',
       })
@@ -354,10 +351,7 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText =
-        'text' in (ctx.callbackQuery.message || {})
-          ? ctx.callbackQuery.message.text
-          : 'Application'
+      const originalText = 'Application'
       await ctx.editMessageText(originalText + '\n\n❌ <b>REJECTED</b>', {
         parse_mode: 'HTML',
       })

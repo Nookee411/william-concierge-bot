@@ -10,18 +10,19 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "jsx": "react-jsx",
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./*"]
     },
     "plugins": [
       {
-        "name": "@effect/language-service"
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql"
       }
     ]
   },
   "exclude": ["node_modules", ".eslintrc.js"],
-  "include": ["**/*.ts", "**/*.js", "**/*.cjs", "custom.d.ts"],
   "tsc-alias": {
     "resolveFullPaths": true,
     "verbose": false

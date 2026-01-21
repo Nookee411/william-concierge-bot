@@ -1,110 +1,61 @@
 version: '3.8'
 
 services:
-  backend:
+  app:
+    container_name: app-${PROJECT_NAME:-concierge_bot}
     image: concierge_bot-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - .env-backend
-    environment:
-      - VIRTUAL_HOST=api.concierge_bot.com
-      - VIRTUAL_PORT=8000
+    ports:
+      - '${SERVER_PORT:-8000}:8000'
     depends_on:
-      - nginx-backend
-      - db
-      - redis
+      db:
+        condition: service_healthy
     healthcheck:
       test:
         [
           'CMD-SHELL',
           'wget -q --spider http://127.0.0.1:8000/swagger || exit 1',
         ]
-      interval: 20s
+      interval: 60s
       timeout: 5s
       retries: 3
       start_period: 10s
     networks:
       - backend-network
-      - app-network
-  #    deploy:
-  #      resources:
-  #        limits:
-  #          cpus: '0.5'
-  #          memory: 400M
-  #        reservations:
-  #          cpus: '0.1'
-  #          memory: 200M
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 400M
+        reservations:
+          cpus: '0.1'
+          memory: 200M
 
-  # telegram-bot:
-  #   image: concierge_bot-backend:latest
-  #   restart: unless-stopped
-  #   env_file:
-  #     - .env-backend
-  #   environment:
-  #     - BOT_MODE=telegram
-  #   command: ['node', 'dist/telegram-bot.js']
-  #   depends_on:
-  #     - db
-  #     - redis
-  #   healthcheck:
-  #     test:
-  #       [
-  #         'CMD-SHELL',
-  #         "ps aux | grep -q '[n]ode dist/telegram-bot.js' || exit 1",
-  #       ]
-  #     interval: 20s
-  #     timeout: 5s
-  #     retries: 2
-  #     start_period: 10s
-  #   networks:
-  #     - backend-network
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 100M
-  #       reservations:
-  #         cpus: '0.05'
-  #         memory: 50M
-  #
-  nginx-backend:
-    image: nginxproxy/nginx-proxy:1.8.0-alpine
+  db:
+    container_name: db-${PROJECT_NAME:-concierge_bot}
+    image: postgres:16-alpine
+    env_file:
+      - .env-backend
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-concierge_bot}
+    volumes:
+      - concierge_bot_postgresql_data:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
-      - '8003:80'
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - '${POSTGRES_PORT:-5432}:5432'
     healthcheck:
       test:
         [
           'CMD-SHELL',
-          "wget -q --spider --header 'Host: api.concierge-bot.com' http://127.0.0.1:80/swagger || exit 1",
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-concierge_bot}',
         ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-    networks:
-      - backend-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 100M
-        reservations:
-          cpus: '0.05'
-          memory: 25M
-
-  db:
-    container_name: db-${PROJECT_NAME:-concierge_bot}
-    image: postgres:13.15-alpine3.20
-    env_file:
-      - .env-backend
-    volumes:
-      - concierge_bot_postgresql_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -119,16 +70,18 @@ services:
           cpus: '0.1'
           memory: 50M
 
-  redis:
-    container_name: redis-${PROJECT_NAME:-concierge_bot}
-    image: 'redis:alpine'
-    volumes:
-      - concierge_bot_redis_data:/data
+  adminer:
+    container_name: adminer-${PROJECT_NAME:-concierge_bot}
+    image: adminer:standalone
     restart: unless-stopped
-    env_file:
-      - .env-backend
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+      - ADMINER_DESIGN=nette
+    ports:
+      - '${ADMINER_PORT:-8080}:8080'
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - backend-network
     deploy:
@@ -138,12 +91,10 @@ services:
           memory: 100M
         reservations:
           cpus: '0.05'
-          memory: 10M
+          memory: 25M
 
 volumes:
   concierge_bot_postgresql_data:
-    driver: local
-  concierge_bot_redis_data:
     driver: local
 
 networks:

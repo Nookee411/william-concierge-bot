@@ -1,13 +1,13 @@
 {
   "name": "project",
   "version": "1.0.0",
-  "main": "app.ts",
+  "main": "src/index.ts",
   "type": "module",
   "license": "MIT",
   "scripts": {
     "start:dev": "tsx watch --include=.env src/index.ts",
-    "start": "node dist/index.js",
-    "build": "tsc",
+    "start": "node dist/src/index.js",
+    "build": "tsc && tsc-alias",
     "lint": "tsc --noEmit"
   },
   "prisma": {

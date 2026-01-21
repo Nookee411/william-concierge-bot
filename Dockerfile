@@ -24,4 +24,4 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/.env ./
 
 EXPOSE 8000
-CMD ["node", "dist/app.js"]
+CMD ["node", "dist/src/index.js"]
