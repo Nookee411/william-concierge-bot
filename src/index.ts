@@ -5,19 +5,19 @@ import { BotConfig, UserState } from './types'
 
 // Validate environment variables
 if (!process.env.BOT_TOKEN) {
-  throw new Error('BOT_TOKEN is required in environment variables')
+  throw new Error('BOT_TOKEN обязателен в переменных окружения')
 }
 
 if (!process.env.ADMIN_CHAT_ID) {
-  throw new Error('ADMIN_CHAT_ID is required in environment variables')
+  throw new Error('ADMIN_CHAT_ID обязателен в переменных окружения')
 }
 
 if (isNaN(Number(process.env.ADMIN_CHAT_ID))) {
-  throw new Error('ADMIN_CHAT_ID must be a numeric value')
+  throw new Error('ADMIN_CHAT_ID должен быть числовым значением')
 }
 
 if (!process.env.CHANNEL_ID) {
-  throw new Error('CHANNEL_ID is required in environment variables')
+  throw new Error('CHANNEL_ID обязателен в переменных окружения')
 }
 
 // Bot configuration
@@ -26,6 +26,8 @@ const config: BotConfig = {
   adminChatId: process.env.ADMIN_CHAT_ID,
   channelId: process.env.CHANNEL_ID,
 }
+
+const pollOptions = ['114A', '116Б', '4 (домик)', 'Офисный сарай']
 
 // Initialize bot
 const bot = new Telegraf(config.botToken)
@@ -47,8 +49,8 @@ async function sendToAdmin(
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '✅ Approve', callback_data: `approve:${session.userId}` },
-            { text: '❌ Reject', callback_data: `reject:${session.userId}` },
+            { text: '✅ Одобрить', callback_data: `approve:${session.userId}` },
+            { text: '❌ Отклонить', callback_data: `reject:${session.userId}` },
           ],
         ],
       },
@@ -64,7 +66,7 @@ async function sendToAdmin(
 // Start command
 bot.command('start', async (ctx: Context) => {
   if (!ctx.from) {
-    return ctx.reply('Unable to identify user.')
+    return ctx.reply('Невозможно идентифицировать пользователя.')
   }
 
   // Initialize new UserState in sessions
@@ -80,18 +82,20 @@ bot.command('start', async (ctx: Context) => {
 
   // Send welcome message explaining the process
   await ctx.reply(
-    '👋 Welcome to the authorization bot!\n\n' +
-      'To gain access to our channel, please complete the following 3 steps:\n\n' +
-      '📱 Step 1: Share your phone number\n' +
-      '📊 Step 2: Answer a quick poll\n' +
-      '💬 Step 3: Provide a text response\n\n' +
-      "Let's get started!",
+    '👋 Добро пожаловать в бот авторизации!\n\n' +
+      'Для получения доступа к нашему каналу выполните следующие 3 шага:\n\n' +
+      '📱 Шаг 1: Поделитесь своим номером телефона\n' +
+      '📊 Шаг 2: Ответьте на короткий опрос\n' +
+      '💬 Шаг 3: Предоставьте текстовый ответ\n\n' +
+      'Давайте начнем!',
   )
 
   // Request phone number with keyboard button
   await ctx.reply(
-    '📱 Step 1/3: Please share your phone number',
-    Markup.keyboard([Markup.button.contactRequest('📱 Share Phone Number')])
+    '📱 Шаг 1/3: Пожалуйста, поделитесь своим номером телефона',
+    Markup.keyboard([
+      Markup.button.contactRequest('📱 Поделиться номером телефона'),
+    ])
       .oneTime()
       .resize(),
   )
@@ -100,7 +104,7 @@ bot.command('start', async (ctx: Context) => {
 // Contact handler - receive phone number
 bot.on('contact', async (ctx: Context) => {
   if (!ctx.from || !ctx.message || !('contact' in ctx.message)) {
-    return ctx.reply('Unable to process contact information.')
+    return ctx.reply('Невозможно обработать контактную информацию.')
   }
 
   const userId = ctx.from.id
@@ -109,27 +113,29 @@ bot.on('contact', async (ctx: Context) => {
   // Check if user has a session
   if (!session) {
     return ctx.reply(
-      'Please start the authorization process first using /start',
+      'Пожалуйста, сначала начните процесс авторизации с помощью /start',
     )
   }
 
   // Check if user is on the correct step
   if (session.step !== 'phone') {
     if (session.step === 'poll') {
-      return ctx.reply('Please answer the poll first.')
+      return ctx.reply('Пожалуйста, сначала ответьте на опрос.')
     } else if (session.step === 'text') {
-      return ctx.reply('Please provide your text response.')
+      return ctx.reply('Пожалуйста, предоставьте текстовый ответ.')
     } else {
-      return ctx.reply('You have already completed the authorization process.')
+      return ctx.reply('Вы уже завершили процесс авторизации.')
     }
   }
 
   // Validate that user shared their own contact, not someone else's
   if (ctx.message.contact.user_id !== userId) {
     return ctx.reply(
-      "❌ Please share your own phone number, not someone else's.\n\n" +
-        'Use the button below to share your contact.',
-      Markup.keyboard([Markup.button.contactRequest('📱 Share Phone Number')])
+      '❌ Пожалуйста, поделитесь своим собственным номером телефона, а не чужим.\n\n' +
+        'Используйте кнопку ниже, чтобы поделиться своим контактом.',
+      Markup.keyboard([
+        Markup.button.contactRequest('📱 Поделиться номером телефона'),
+      ])
         .oneTime()
         .resize(),
     )
@@ -140,18 +146,14 @@ bot.on('contact', async (ctx: Context) => {
   session.step = 'poll'
 
   // Confirm receipt and remove keyboard
-  await ctx.reply('✅ Phone number received!', Markup.removeKeyboard())
+  await ctx.reply('✅ Номер телефона получен!', Markup.removeKeyboard())
 
   // Proceed to step 2 - send poll
-  await ctx.reply('📊 Step 2/3: Please answer this poll question')
+  await ctx.reply('📊 Шаг 2/3: Пожалуйста, ответьте на этот вопрос опроса')
 
-  await ctx.replyWithPoll(
-    'Which option do you prefer?',
-    ['Option A', 'Option B'],
-    {
-      is_anonymous: false,
-    },
-  )
+  await ctx.replyWithPoll('Выберите номер дома', pollOptions, {
+    is_anonymous: false,
+  })
 })
 
 // Poll answer handler - receive poll response
@@ -167,7 +169,7 @@ bot.on('poll_answer', async (ctx: Context) => {
   if (!session) {
     return bot.telegram.sendMessage(
       userId,
-      'Please start the authorization process first using /start',
+      'Пожалуйста, сначала начните процесс авторизации с помощью /start',
     )
   }
 
@@ -180,39 +182,40 @@ bot.on('poll_answer', async (ctx: Context) => {
   if (ctx.pollAnswer.option_ids.length === 0) {
     return bot.telegram.sendMessage(
       userId,
-      '❌ Please select an option from the poll.',
+      '❌ Пожалуйста, выберите вариант из опроса.',
     )
   }
 
   // Store poll choice and update step
   const selectedOption = ctx.pollAnswer.option_ids[0]
-  session.pollChoice = selectedOption === 0 ? 'option_a' : 'option_b'
+  console.log(pollOptions)
+  console.log(ctx.pollAnswer)
+  session.pollChoice = pollOptions[selectedOption]
+  console.log(session)
   session.step = 'text'
 
-  // Confirm receipt and proceed to step 3
-  await bot.telegram.sendMessage(userId, '✅ Poll answer received!')
+  await bot.telegram.sendMessage(userId, '✅ Ответ на опрос получен!')
   await bot.telegram.sendMessage(
     userId,
-    '💬 Step 3/3: Please provide a text response.\n\n' +
-      'Type your message below (or use /cancel to restart):',
+    '💬 Шаг 3/3: Номер квартиры(офиса).\n\n' +
+      'Введите ваше сообщение ниже (или используйте /cancel для перезапуска):',
   )
 })
 
-// Cancel command - clear session and restart
 bot.command('cancel', async (ctx: Context) => {
   if (!ctx.from) {
-    return ctx.reply('Unable to identify user.')
+    return ctx.reply('Невозможно идентифицировать пользователя.')
   }
 
   const userId = ctx.from.id
   clearUserSession(userId, sessions)
 
   await ctx.reply(
-    '❌ Authorization process cancelled.\n\n' + 'Use /start to begin again.',
+    '❌ Процесс авторизации отменен.\n\n' +
+      'Используйте /start, чтобы начать заново.',
   )
 })
 
-// Text message handler - receive text response
 bot.on('text', async (ctx: Context) => {
   if (!ctx.from || !ctx.message || !('text' in ctx.message)) {
     return
@@ -229,7 +232,7 @@ bot.on('text', async (ctx: Context) => {
   // Check if user has a session
   if (!session) {
     return ctx.reply(
-      'Please start the authorization process first using /start',
+      'Пожалуйста, сначала начните процесс авторизации с помощью /start',
     )
   }
 
@@ -237,29 +240,29 @@ bot.on('text', async (ctx: Context) => {
   if (session.step !== 'text') {
     if (session.step === 'phone') {
       return ctx.reply(
-        'Please share your phone number using the button provided.',
+        'Пожалуйста, поделитесь своим номером телефона, используя предоставленную кнопку.',
       )
     } else if (session.step === 'poll') {
-      return ctx.reply('Please answer the poll first.')
+      return ctx.reply('Пожалуйста, сначала ответьте на опрос.')
     } else {
-      return ctx.reply('You have already completed the authorization process.')
+      return ctx.reply('Вы уже завершили процесс авторизации.')
     }
   }
 
   // Validate text response
   const textResponse = ctx.message.text.trim()
 
-  if (textResponse.length < 10) {
+  if (textResponse.length < 1) {
     return ctx.reply(
-      '❌ Your response is too short. Please provide at least 10 characters.\n\n' +
-        'Try again:',
+      '❌ Ваш ответ слишком короткий. Пожалуйста, введите не менее 1 символа.\n\n' +
+        'Попробуйте еще раз:',
     )
   }
 
   if (textResponse.length > 500) {
     return ctx.reply(
-      '❌ Your response is too long. Please keep it under 500 characters.\n\n' +
-        'Try again:',
+      '❌ Ваш ответ слишком длинный. Пожалуйста, ограничьте его до 500 символов.\n\n' +
+        'Попробуйте еще раз:',
     )
   }
 
@@ -268,7 +271,7 @@ bot.on('text', async (ctx: Context) => {
   session.step = 'completed'
 
   // Send confirmation to user
-  await ctx.reply('✅ Thank you! Your application is being reviewed.')
+  await ctx.reply('✅ Спасибо! Ваша заявка рассматривается.')
 
   // Send data to admin using helper function
   try {
@@ -276,7 +279,7 @@ bot.on('text', async (ctx: Context) => {
   } catch (error) {
     console.error('[Text Handler] Error sending to admin:', error)
     await ctx.reply(
-      '⚠️ There was an error submitting your application. Please contact support.',
+      '⚠️ Произошла ошибка при отправке вашей заявки. Пожалуйста, обратитесь в службу поддержки.',
     )
   }
 
@@ -294,7 +297,7 @@ bot.on('callback_query', async (ctx: Context) => {
 
   // Verify admin
   if (adminId !== config.adminChatId) {
-    return ctx.answerCbQuery('⛔ Unauthorized. Admin only.', {
+    return ctx.answerCbQuery('⛔ Неавторизовано. Только для администратора.', {
       show_alert: true,
     })
   }
@@ -304,13 +307,15 @@ bot.on('callback_query', async (ctx: Context) => {
   const userId = parseInt(userIdStr)
 
   if (!action || !userId) {
-    return ctx.answerCbQuery('Invalid callback data', { show_alert: true })
+    return ctx.answerCbQuery('Неверные данные запроса', { show_alert: true })
   }
 
   // Get user session
   const session = sessions.get(userId)
   if (!session) {
-    return ctx.answerCbQuery('⚠️ User session not found', { show_alert: true })
+    return ctx.answerCbQuery('⚠️ Сессия пользователя не найдена', {
+      show_alert: true,
+    })
   }
 
   try {
@@ -324,49 +329,51 @@ bot.on('callback_query', async (ctx: Context) => {
       // Send invite to user
       await bot.telegram.sendMessage(
         userId,
-        `✅ Your authorization request has been approved!\n\n` +
-          `Join the channel using this link: ${invite.invite_link}\n\n` +
-          `Note: This link expires in 1 hour.`,
+        `✅ Ваш запрос на авторизацию был одобрен!\n\n` +
+          `Присоединяйтесь к каналу по этой ссылке: ${invite.invite_link}\n\n` +
+          `Примечание: Срок действия этой ссылки истекает через 1 час.`,
       )
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText = 'Application'
-      await ctx.editMessageText(originalText + '\n\n✅ <b>APPROVED</b>', {
+      const originalText = 'Заявка'
+      await ctx.editMessageText(originalText + '\n\n✅ <b>ОДОБРЕНО</b>', {
         parse_mode: 'HTML',
       })
 
       // Clear user session
       clearUserSession(userId, sessions)
 
-      await ctx.answerCbQuery('✅ User approved and invite sent!')
+      await ctx.answerCbQuery(
+        '✅ Пользователь одобрен и приглашение отправлено!',
+      )
       console.log(`[Admin] User ${userId} approved by admin`)
     } else if (action === 'reject') {
       // Notify user of rejection
       await bot.telegram.sendMessage(
         userId,
-        '❌ Your authorization request has been rejected.\n\n' +
-          'If you believe this is an error, please contact support.',
+        '❌ Ваш запрос на авторизацию был отклонен.\n\n' +
+          'Если вы считаете, что это ошибка, пожалуйста, обратитесь в службу поддержки.',
       )
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText = 'Application'
-      await ctx.editMessageText(originalText + '\n\n❌ <b>REJECTED</b>', {
+      const originalText = 'Заявка'
+      await ctx.editMessageText(originalText + '\n\n❌ <b>ОТКЛОНЕНО</b>', {
         parse_mode: 'HTML',
       })
 
       // Clear user session
       clearUserSession(userId, sessions)
 
-      await ctx.answerCbQuery('❌ User rejected and notified.')
+      await ctx.answerCbQuery('❌ Пользователь отклонен и уведомлен.')
       console.log(`[Admin] User ${userId} rejected by admin`)
     } else {
-      await ctx.answerCbQuery('Unknown action', { show_alert: true })
+      await ctx.answerCbQuery('Неизвестное действие', { show_alert: true })
     }
   } catch (error) {
     console.error('[Callback] Error processing admin action:', error)
-    await ctx.answerCbQuery('⚠️ Error processing request', { show_alert: true })
+    await ctx.answerCbQuery('⚠️ Ошибка обработки запроса', { show_alert: true })
   }
 })
 
@@ -378,14 +385,16 @@ bot.command('request', async (ctx: Context) => {
     // Send request to admin
     await bot.telegram.sendMessage(
       config.adminChatId,
-      `📝 New Access Request:\n\n${userInfo}\n\n` +
-        `Use /approve ${ctx.from?.id} or /deny ${ctx.from?.id} to respond.`,
+      `📝 Новый запрос на доступ:\n\n${userInfo}\n\n` +
+        `Используйте /approve ${ctx.from?.id} или /deny ${ctx.from?.id} для ответа.`,
     )
 
-    await ctx.reply('Your request has been submitted to the admin for review.')
+    await ctx.reply('Ваш запрос был отправлен администратору на рассмотрение.')
   } catch (error) {
     console.error('Error sending request to admin:', error)
-    await ctx.reply('Failed to submit request. Please try again later.')
+    await ctx.reply(
+      'Не удалось отправить запрос. Пожалуйста, попробуйте позже.',
+    )
   }
 })
 
@@ -451,16 +460,16 @@ bot.help(async (ctx: Context) => {
   const isAdmin = ctx.chat?.id.toString() === config.adminChatId
 
   let helpText =
-    '🤖 Bot Commands:\n\n' +
-    '/start - Start the bot\n' +
-    '/request - Request channel access\n' +
-    '/help - Show this help message'
+    '🤖 Команды бота:\n\n' +
+    '/start - Запустить бота\n' +
+    '/request - Запросить доступ к каналу\n' +
+    '/help - Показать это справочное сообщение'
 
   if (isAdmin) {
     helpText +=
-      '\n\nAdmin Commands:\n' +
-      '/approve <user_id> - Approve user request\n' +
-      '/deny <user_id> - Deny user request'
+      '\n\nКоманды администратора:\n' +
+      '/approve <user_id> - Одобрить запрос пользователя\n' +
+      '/deny <user_id> - Отклонить запрос пользователя'
   }
 
   await ctx.reply(helpText)
@@ -469,7 +478,7 @@ bot.help(async (ctx: Context) => {
 // Error handling
 bot.catch((err: unknown, ctx: Context) => {
   console.error('Bot error:', err)
-  ctx.reply('An error occurred. Please try again later.')
+  ctx.reply('Произошла ошибка. Пожалуйста, попробуйте позже.')
 })
 
 // Launch bot
@@ -483,17 +492,17 @@ bot
     process.exit(1)
   })
 
-console.log('✅ Bot is running and listening for messages...')
+console.log('✅ Бот запущен и слушает сообщения...')
 
 // Enable graceful shutdown
 process.once('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully...')
+  console.log('Получен SIGINT, корректное завершение...')
   bot.stop('SIGINT')
   process.exit(0)
 })
 
 process.once('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...')
+  console.log('Получен SIGTERM, корректное завершение...')
   bot.stop('SIGTERM')
   process.exit(0)
 })
