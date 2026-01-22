@@ -2,6 +2,7 @@ import { Telegraf, Context, Markup } from 'telegraf'
 import 'dotenv/config'
 import { formatUserInfo, formatAdminMessage, clearUserSession } from './utils'
 import { BotConfig, UserState } from './types'
+import logger from '../logs/pino'
 
 // Validate environment variables
 if (!process.env.BOT_TOKEN) {
@@ -56,9 +57,9 @@ async function sendToAdmin(
       },
     })
 
-    console.log(`[Admin] Sent application for user ${session.userId} to admin`)
+    logger.info(`[Admin] Sent application for user ${session.userId} to admin`)
   } catch (error) {
-    console.error('[Admin] Error sending to admin:', error)
+    logger.error('[Admin] Error sending to admin:', error)
     throw error // Re-throw so caller can handle
   }
 }
@@ -188,10 +189,10 @@ bot.on('poll_answer', async (ctx: Context) => {
 
   // Store poll choice and update step
   const selectedOption = ctx.pollAnswer.option_ids[0]
-  console.log(pollOptions)
-  console.log(ctx.pollAnswer)
+  logger.info(pollOptions)
+  logger.info(ctx.pollAnswer)
   session.pollChoice = pollOptions[selectedOption]
-  console.log(session)
+  logger.info(session)
   session.step = 'text'
 
   await bot.telegram.sendMessage(userId, '✅ Ответ на опрос получен!')
@@ -277,7 +278,7 @@ bot.on('text', async (ctx: Context) => {
   try {
     await sendToAdmin(bot, session, config.adminChatId)
   } catch (error) {
-    console.error('[Text Handler] Error sending to admin:', error)
+    logger.error('[Text Handler] Error sending to admin:', error)
     await ctx.reply(
       '⚠️ Произошла ошибка при отправке вашей заявки.',
     )
@@ -347,7 +348,7 @@ bot.on('callback_query', async (ctx: Context) => {
       await ctx.answerCbQuery(
         '✅ Пользователь одобрен и приглашение отправлено!',
       )
-      console.log(`[Admin] User ${userId} approved by admin`)
+      logger.info(`[Admin] User ${userId} approved by admin`)
     } else if (action === 'reject') {
       // Notify user of rejection
       await bot.telegram.sendMessage(
@@ -366,12 +367,12 @@ bot.on('callback_query', async (ctx: Context) => {
       clearUserSession(userId, sessions)
 
       await ctx.answerCbQuery('❌ Пользователь отклонен и уведомлен.')
-      console.log(`[Admin] User ${userId} rejected by admin`)
+      logger.info(`[Admin] User ${userId} rejected by admin`)
     } else {
       await ctx.answerCbQuery('Неизвестное действие', { show_alert: true })
     }
   } catch (error) {
-    console.error('[Callback] Error processing admin action:', error)
+    logger.error('[Callback] Error processing admin action:', error)
     await ctx.answerCbQuery('⚠️ Ошибка обработки запроса', { show_alert: true })
   }
 })
@@ -390,7 +391,7 @@ bot.command('request', async (ctx: Context) => {
 
     await ctx.reply('Ваш запрос был отправлен администратору на рассмотрение.')
   } catch (error) {
-    console.error('Error sending request to admin:', error)
+    logger.error('Error sending request to admin:', error)
     await ctx.reply(
       'Не удалось отправить запрос. Пожалуйста, попробуйте позже.',
     )
@@ -425,7 +426,7 @@ bot.command('request', async (ctx: Context) => {
 //
 //     await ctx.reply(`User ${userId} has been approved and sent an invite link.`)
 //   } catch (error) {
-//     console.error('Error approving user:', error)
+//     logger.error('Error approving user:', error)
 //     await ctx.reply(`Failed to approve user ${userId}. Error: ${error}`)
 //   }
 // })
@@ -449,7 +450,7 @@ bot.command('request', async (ctx: Context) => {
 //
 //     await ctx.reply(`User ${userId} has been notified of denial.`)
 //   } catch (error) {
-//     console.error('Error denying user:', error)
+//     logger.error('Error denying user:', error)
 //     await ctx.reply(`Failed to notify user ${userId}. Error: ${error}`)
 //   }
 // })
@@ -476,7 +477,7 @@ bot.help(async (ctx: Context) => {
 
 // Error handling
 bot.catch((err: unknown, ctx: Context) => {
-  console.error('Bot error:', err)
+  logger.error('Bot error:', err)
   ctx.reply('Произошла ошибка. Пожалуйста, попробуйте позже.')
 })
 
@@ -487,21 +488,21 @@ bot
     // This won't execute until bot stops
   })
   .catch(err => {
-    console.error('❌ Failed to start bot:', err)
+    logger.error('❌ Failed to start bot:', err)
     process.exit(1)
   })
 
-console.log('✅ Бот запущен и слушает сообщения...')
+logger.info('✅ Бот запущен и слушает сообщения...')
 
 // Enable graceful shutdown
 process.once('SIGINT', () => {
-  console.log('Получен SIGINT, корректное завершение...')
+  logger.info('Получен SIGINT, корректное завершение...')
   bot.stop('SIGINT')
   process.exit(0)
 })
 
 process.once('SIGTERM', () => {
-  console.log('Получен SIGTERM, корректное завершение...')
+  logger.info('Получен SIGTERM, корректное завершение...')
   bot.stop('SIGTERM')
   process.exit(0)
 })
