@@ -272,16 +272,16 @@ bot.on('text', async (ctx: Context) => {
   session.step = 'completed'
 
   // Send confirmation to user
-  await ctx.reply('✅ Спасибо! Ваша заявка ожидает ручного рассмотрения ответственного за шлагбаум')
+  await ctx.reply(
+    '✅ Спасибо! Ваша заявка ожидает ручного рассмотрения ответственного за шлагбаум',
+  )
 
   // Send data to admin using helper function
   try {
     await sendToAdmin(bot, session, config.adminChatId)
   } catch (error) {
     logger.error('[Text Handler] Error sending to admin:', error)
-    await ctx.reply(
-      '⚠️ Произошла ошибка при отправке вашей заявки.',
-    )
+    await ctx.reply('⚠️ Произошла ошибка при отправке вашей заявки.')
   }
 
   // Keep session in Map until admin responds (don't clear yet)
@@ -324,7 +324,7 @@ bot.on('callback_query', async (ctx: Context) => {
       // Create invite link for the channel
       const invite = await bot.telegram.createChatInviteLink(config.channelId, {
         member_limit: 1,
-        expire_date: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+        expire_date: Math.floor(Date.now() / 1000) + 3600 * 10, // 10 hour expiry
       })
 
       // Send invite to user
