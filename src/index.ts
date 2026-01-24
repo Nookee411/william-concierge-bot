@@ -321,10 +321,10 @@ bot.on('callback_query', async (ctx: Context) => {
 
   try {
     if (action === 'approve') {
-      // Create invite link for the channel
+      // Create invite link for the channe24l
       const invite = await bot.telegram.createChatInviteLink(config.channelId, {
         member_limit: 1,
-        expire_date: Math.floor(Date.now() / 1000) + 3600 * 10, // 10 hour expiry
+        expire_date: Math.floor(Date.now() / 1000) + 3600 * 24, // 10 hour expiry
       })
 
       // Send invite to user
@@ -337,10 +337,10 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText = 'Заявка'
-      await ctx.editMessageText(originalText + '\n\n✅ <b>ОДОБРЕНО</b>', {
-        parse_mode: 'HTML',
-      })
+      // const originalText = 'Заявка'
+      // await ctx.editMessageText(originalText + '\n\n✅ <b>ОДОБРЕНО</b>', {
+      //   parse_mode: 'HTML',
+      // })
 
       // Clear user session
       clearUserSession(userId, sessions)
@@ -358,10 +358,10 @@ bot.on('callback_query', async (ctx: Context) => {
 
       // Update admin message
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] })
-      const originalText = 'Заявка'
-      await ctx.editMessageText(originalText + '\n\n❌ <b>ОТКЛОНЕНО</b>', {
-        parse_mode: 'HTML',
-      })
+      // const originalText = 'Заявка'
+      // await ctx.editMessageText(originalText + '\n\n❌ <b>ОТКЛОНЕНО</b>', {
+      //   parse_mode: 'HTML',
+      // })
 
       // Clear user session
       clearUserSession(userId, sessions)
