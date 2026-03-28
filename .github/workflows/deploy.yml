@@ -4,16 +4,16 @@ on:
   push:
     branches: [main]
 
-# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+# Required GitHub Configuration (Settings → Environments → Production):
 #
-# SSH/Deployment:
+# Environment Secrets:
 #   SSH_HOST        - Server hostname or IP address
 #   SSH_USERNAME    - SSH username for deployment
 #   SSH_KEY         - Private SSH key for authentication
 #   SSH_PORT        - SSH port (default: 22)
 #   DEPLOY_PATH     - Deployment directory on server (e.g., /home/user/william-concierge-bot)
 #
-# Application Environment:
+# Environment Variables (Settings → Environments → Production → Environment variables):
 #   ENV_FILE        - Complete .env file contents with all environment variables
 #                     Example format:
 #                     BOT_TOKEN=your_bot_token_here
@@ -27,7 +27,7 @@ jobs:
     environment: Production
 
     steps:
-      - name: Validate required secrets
+      - name: Validate required configuration
         run: |
           if [ -z "${{ secrets.SSH_HOST }}" ]; then
             echo "ERROR: SSH_HOST secret is not set"
@@ -45,11 +45,11 @@ jobs:
             echo "ERROR: DEPLOY_PATH secret is not set"
             exit 1
           fi
-          if [ -z "${{ secrets.ENV_FILE }}" ]; then
-            echo "ERROR: ENV_FILE secret is not set"
+          if [ -z "${{ vars.ENV_FILE }}" ]; then
+            echo "ERROR: ENV_FILE variable is not set"
             exit 1
           fi
-          echo "All required secrets are configured ✓"
+          echo "All required configuration is set ✓"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -102,9 +102,9 @@ jobs:
 
             cd ${{ secrets.DEPLOY_PATH }}
 
-            # Create .env file from GitHub secret
+            # Create .env file from GitHub variable
             cat > .env << 'ENVEOF'
-          ${{ secrets.ENV_FILE }}
+          ${{ vars.ENV_FILE }}
           ENVEOF
 
             # Verify node/npm/yarn are available
