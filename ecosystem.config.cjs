@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'concierge-bot',
-      script: './dist/src/index.js',
+      script: './src/index.js',
       instances: 1,
       exec_mode: 'fork',
 
