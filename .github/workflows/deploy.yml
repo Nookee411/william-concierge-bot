@@ -26,6 +26,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then
+            echo "ERROR: SSH_HOST secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SSH_USERNAME }}" ]; then
+            echo "ERROR: SSH_USERNAME secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "ERROR: SSH_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_PATH }}" ]; then
+            echo "ERROR: DEPLOY_PATH secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ENV_FILE }}" ]; then
+            echo "ERROR: ENV_FILE secret is not set"
+            exit 1
+          fi
+          echo "All required secrets are configured ✓"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
