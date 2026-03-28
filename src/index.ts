@@ -2,7 +2,7 @@ import { Telegraf, Context, Markup } from 'telegraf'
 import 'dotenv/config'
 import { formatUserInfo, formatAdminMessage, clearUserSession } from './utils'
 import { BotConfig, UserState } from './types'
-import logger from '../logs/pino'
+import logger from './pino'
 
 // Validate environment variables
 if (!process.env.BOT_TOKEN) {
@@ -84,11 +84,11 @@ bot.command('start', async (ctx: Context) => {
   // Send welcome message explaining the process
   await ctx.reply(
     '👋 Это бот для входа в чат шлагбаума домов 116Б 114А!\n\n' +
-      'Для получения доступа к чату необходимо предоставить свои данные:\n\n' +
-      '📱 Шаг 1: Поделитесь своим номером телефона\n' +
-      '📊 Шаг 2: Выберите номер дома, где вы живёте/работаете\n' +
-      '💬 Шаг 3: Введите номер квартиры/офиса (можно название компании)\n\n' +
-      'Давайте начнем!',
+    'Для получения доступа к чату необходимо предоставить свои данные:\n\n' +
+    '📱 Шаг 1: Поделитесь своим номером телефона\n' +
+    '📊 Шаг 2: Выберите номер дома, где вы живёте/работаете\n' +
+    '💬 Шаг 3: Введите номер квартиры/офиса (можно название компании)\n\n' +
+    'Давайте начнем!',
   )
 
   // Request phone number with keyboard button
@@ -133,7 +133,7 @@ bot.on('contact', async (ctx: Context) => {
   if (ctx.message.contact.user_id !== userId) {
     return ctx.reply(
       '❌ Пожалуйста, поделитесь своим собственным номером телефона, а не чужим.\n\n' +
-        'Используйте кнопку ниже, чтобы поделиться своим контактом.',
+      'Используйте кнопку ниже, чтобы поделиться своим контактом.',
       Markup.keyboard([
         Markup.button.contactRequest('📱 Поделиться номером телефона'),
       ])
@@ -199,7 +199,7 @@ bot.on('poll_answer', async (ctx: Context) => {
   await bot.telegram.sendMessage(
     userId,
     '💬 Шаг 3/3: Номер квартиры (офиса).\n\n' +
-      'Введите ваше сообщение ниже (или используйте /cancel для перезапуска):',
+    'Введите ваше сообщение ниже (или используйте /cancel для перезапуска):',
   )
 })
 
@@ -213,7 +213,7 @@ bot.command('cancel', async (ctx: Context) => {
 
   await ctx.reply(
     '❌ Процесс авторизации отменен.\n\n' +
-      'Используйте /start, чтобы начать заново.',
+    'Используйте /start, чтобы начать заново.',
   )
 })
 
@@ -256,14 +256,14 @@ bot.on('text', async (ctx: Context) => {
   if (textResponse.length < 1) {
     return ctx.reply(
       '❌ Ваш ответ слишком короткий. Пожалуйста, введите не менее 1 символа.\n\n' +
-        'Попробуйте еще раз:',
+      'Попробуйте еще раз:',
     )
   }
 
   if (textResponse.length > 500) {
     return ctx.reply(
       '❌ Ваш ответ слишком длинный. Пожалуйста, ограничьте его до 500 символов.\n\n' +
-        'Попробуйте еще раз:',
+      'Попробуйте еще раз:',
     )
   }
 
@@ -331,8 +331,8 @@ bot.on('callback_query', async (ctx: Context) => {
       await bot.telegram.sendMessage(
         userId,
         `✅ Ваш запрос на авторизацию был одобрен!\n\n` +
-          `Присоединяйтесь к каналу по этой ссылке: ${invite.invite_link}\n\n` +
-          `Примечание: Срок действия этой ссылки истекает через 1 час.`,
+        `Присоединяйтесь к каналу по этой ссылке: ${invite.invite_link}\n\n` +
+        `Примечание: Срок действия этой ссылки истекает через 1 час.`,
       )
 
       // Update admin message
@@ -386,7 +386,7 @@ bot.command('request', async (ctx: Context) => {
     await bot.telegram.sendMessage(
       config.adminChatId,
       `📝 Новый запрос на доступ:\n\n${userInfo}\n\n` +
-        `Используйте /approve ${ctx.from?.id} или /deny ${ctx.from?.id} для ответа.`,
+      `Используйте /approve ${ctx.from?.id} или /deny ${ctx.from?.id} для ответа.`,
     )
 
     await ctx.reply('Ваш запрос был отправлен администратору на рассмотрение.')
