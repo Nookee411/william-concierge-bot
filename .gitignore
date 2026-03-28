@@ -15,3 +15,5 @@ api.log
 
 storage
 .vscode/
+
+ssh-keys

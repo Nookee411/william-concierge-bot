@@ -3,3 +3,83 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
+
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#
+# SSH/Deployment:
+#   SSH_HOST        - Server hostname or IP address
+#   SSH_USERNAME    - SSH username for deployment
+#   SSH_KEY         - Private SSH key for authentication
+#   SSH_PORT        - SSH port (default: 22)
+#   DEPLOY_PATH     - Deployment directory on server (e.g., /home/user/william-concierge-bot)
+#
+# Application Environment:
+#   ENV_FILE        - Complete .env file contents with all environment variables
+#                     Example format:
+#                     BOT_TOKEN=your_bot_token_here
+#                     DATABASE_URL=postgresql://user:pass@host:5432/db
+#                     REDIS_URL=redis://localhost:6379
+#                     NODE_ENV=production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build project
+        run: yarn build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.SSH_PORT || 22 }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT || 22 }}" \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='logs' \
+            dist/ package.json yarn.lock ecosystem.config.js \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
+
+      - name: Install dependencies and setup on server
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT || 22 }} \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Create .env file from GitHub secret
+            cat > .env << 'ENVEOF'
+          ${{ secrets.ENV_FILE }}
+          ENVEOF
+
+            # Install production dependencies
+            yarn install --frozen-lockfile --production
+
+            # Create logs directory if it doesn't exist
+            mkdir -p logs
+
+            # Restart PM2 process
+            yarn pm2:restart || yarn pm2:start
+          EOF
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
