@@ -57,7 +57,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -88,6 +88,18 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT || 22 }} \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # Load shell profile to get nvm, npm, yarn
+            if [ -f ~/.nvm/nvm.sh ]; then
+              export NVM_DIR="$HOME/.nvm"
+              . "$NVM_DIR/nvm.sh"
+            fi
+            if [ -f ~/.profile ]; then
+              . ~/.profile
+            fi
+            if [ -f ~/.bashrc ]; then
+              . ~/.bashrc
+            fi
+
             cd ${{ secrets.DEPLOY_PATH }}
 
             # Create .env file from GitHub secret
@@ -95,11 +107,10 @@ jobs:
           ${{ secrets.ENV_FILE }}
           ENVEOF
 
-            # Install yarn if not present
-            if ! command -v yarn &> /dev/null; then
-              echo "Yarn not found, installing..."
-              npm install -g yarn
-            fi
+            # Verify node/npm/yarn are available
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Yarn version: $(yarn --version)"
 
             # Install production dependencies
             yarn install --frozen-lockfile --production
@@ -120,3 +131,4 @@ jobs:
       - name: Cleanup SSH key
         if: always()
         run: rm -f ~/.ssh/deploy_key
+
