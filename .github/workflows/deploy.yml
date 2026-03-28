@@ -81,7 +81,7 @@ jobs:
             --exclude='node_modules' \
             --exclude='.env' \
             --exclude='logs' \
-            dist/ package.json yarn.lock ecosystem.config.js \
+            dist/ package.json yarn.lock ecosystem.config.cjs \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       - name: Install dependencies and setup on server
@@ -131,4 +131,3 @@ jobs:
       - name: Cleanup SSH key
         if: always()
         run: rm -f ~/.ssh/deploy_key
-
